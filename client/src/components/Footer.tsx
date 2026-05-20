@@ -12,7 +12,11 @@ export default function Footer() {
           <div className="flex flex-col items-center md:items-start text-center md:text-left">
             <Link href="/">
               <a className="flex items-center space-x-2 text-2xl font-bold text-primary hover:text-primary/90 transition-colors">
-                <img src="/nestify-logo.svg" alt="Nestify Logo" className="h-8 w-8" />
+                <img
+                  src="https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/nestify-logo-new-XhSiiisGWjWosbbbN2nk93.webp"
+                  alt="Nestify Logo"
+                  className="h-8 w-8"
+                />
                 <span>Nestify</span>
               </a>
             </Link>

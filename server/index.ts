@@ -468,6 +468,13 @@ app.get("/api/health", (req: Request, res: Response) => {
 
 app.use(express.static(path.join(appRoot, "dist/public")));
 
+// SPA Routing Fix: Serve index.html for all non-API routes
+app.get("*", (req: Request, res: Response) => {
+  if (!req.path.startsWith("/api")) {
+    res.sendFile(path.join(appRoot, "dist/public/index.html"));
+  }
+});
+
 // ============================================
 // Server Start with WebSocket Support
 // ============================================
