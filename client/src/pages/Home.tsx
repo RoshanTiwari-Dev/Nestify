@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen, MapPin, ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
@@ -58,281 +58,351 @@ export default function Home() {
 
     // Filter by search location
     if (searchLocation) {
+      const search = searchLocation.toLowerCase();
       filtered = filtered.filter(
         (p) =>
-          p.name.toLowerCase().includes(searchLocation.toLowerCase()) ||
-          p.location.toLowerCase().includes(searchLocation.toLowerCase())
+          p.name.toLowerCase().includes(search) ||
+          p.location.toLowerCase().includes(search) ||
+          p.city.toLowerCase().includes(search)
       );
     }
 
-    // Filter by price
+    // Filter by price range
     if (priceFilter !== "all") {
-      filtered = filtered.filter((p) => {
-        const price = p.price;
-        if (priceFilter === "low") return price < 5000;
-        if (priceFilter === "mid") return price >= 5000 && price < 10000;
-        if (priceFilter === "high") return price >= 10000;
-        return true;
-      });
+      if (priceFilter === "low") {
+        filtered = filtered.filter((p) => p.price < 5000);
+      } else if (priceFilter === "mid") {
+        filtered = filtered.filter((p) => p.price >= 5000 && p.price <= 7000);
+      } else if (priceFilter === "high") {
+        filtered = filtered.filter((p) => p.price > 7000);
+      }
     }
 
-    // Filter by type
+    // Filter by property type
     if (typeFilter !== "all") {
       filtered = filtered.filter((p) => p.type === typeFilter);
     }
 
-    // Filter by near colleges
-    if (showNearColleges) {
-      filtered = filtered.filter((p) => p.nearbyColleges && p.nearbyColleges.length > 0);
-    }
-
-    // Sort
+    // Apply sorting (create a new array to avoid mutating state)
+    const sorted = [...filtered];
     if (sortBy === "price-low") {
-      filtered.sort((a, b) => a.price - b.price);
+      sorted.sort((a, b) => a.price - b.price);
     } else if (sortBy === "price-high") {
-      filtered.sort((a, b) => b.price - a.price);
+      sorted.sort((a, b) => b.price - a.price);
     } else if (sortBy === "rating") {
-      filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      sorted.sort((a, b) => b.rating - a.rating);
     } else if (sortBy === "distance") {
-      // Sort by distance if available
-      filtered.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      sorted.sort((a, b) => {
+        const distA = a.nearMetro ? parseInt(a.nearMetro.distance) : 999;
+        const distB = b.nearMetro ? parseInt(b.nearMetro.distance) : 999;
+        return distA - distB;
+      });
     }
 
-    return filtered;
-  }, [
-    allProperties,
-    realProperties,
-    selectedCity,
-    selectedLocation,
-    searchLocation,
-    priceFilter,
-    typeFilter,
-    showNearColleges,
-    sortBy,
-  ]);
+    return sorted;
+  }, [searchLocation, selectedCity, selectedLocation, priceFilter, typeFilter, sortBy, allProperties, realProperties]);
 
   // Pagination
   const totalPages = Math.ceil(filteredProperties.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentProperties = filteredProperties.slice(startIndex, endIndex);
+  const paginatedProperties = filteredProperties.slice(startIndex, startIndex + itemsPerPage);
+
+  const nearCollegeProperties = useMemo(() => {
+    if (!selectedCity) return [];
+    return getPropertiesNearColleges(selectedCity);
+  }, [selectedCity]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
+    <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-amber-100 via-orange-50 to-rose-50 py-12 px-4 md:py-20">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Find Your Perfect <span className="text-orange-600">Nest</span>
-          </h1>
-          <p className="text-lg text-gray-600 mb-8">
-            Discover comfortable PGs and hostels near your college
+      <div
+        className="relative h-96 bg-cover bg-center flex items-center justify-center"
+        style={{
+          backgroundImage:
+            "url('https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/nestify-hero-MypPbgT6S6Y4WWu5X8Nsnd.webp')",
+        }}
+      >
+        <div className="absolute inset-0 bg-black/40"></div>
+        <div className="relative z-10 text-center text-white">
+          <h1 className="font-display text-5xl font-bold mb-4">Find Your Perfect Home</h1>
+          <p className="text-xl">
+            Discover comfortable PG accommodations and hostels tailored to your needs
           </p>
-
-          {/* Search Bar */}
-          <div className="bg-white rounded-full shadow-lg p-2 flex flex-col md:flex-row gap-2 max-w-4xl mx-auto">
-            <div className="flex-1 flex items-center px-4">
-              <Search className="w-5 h-5 text-gray-400 mr-2" />
-              <Input
-                placeholder="Search by location or property name..."
-                value={searchLocation}
-                onChange={(e) => {
-                  setSearchLocation(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="border-0 focus:ring-0 text-base"
-              />
-            </div>
-            <Button className="bg-orange-600 hover:bg-orange-700 text-white rounded-full px-8">
-              <Search className="w-4 h-4 mr-2" />
-              Search
-            </Button>
-          </div>
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-          {/* City Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-            <select
-              value={selectedCity}
-              onChange={(e) => {
-                setSelectedCity(e.target.value);
-                setSelectedLocation("");
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="">All Cities</option>
-              {CITIES.map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Location Filter */}
-          {selectedCity && (
+      {/* Search & Filter Section */}
+      <div className="bg-white border-b border-border sticky top-0 z-20">
+        <div className="container mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3">
+            {/* City Dropdown */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                City
+              </label>
               <select
-                value={selectedLocation}
+                value={selectedCity}
                 onChange={(e) => {
-                  setSelectedLocation(e.target.value);
+                  setSelectedCity(e.target.value);
+                  setSelectedLocation("");
                   setCurrentPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full px-3 py-2 rounded-full border border-border bg-background text-foreground font-medium text-sm"
               >
-                <option value="">All Locations</option>
-                {locations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
+                <option value="">All Cities</option>
+                {CITIES.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
                   </option>
                 ))}
               </select>
             </div>
-          )}
 
-          {/* Price Filter */}
+            {/* Location Dropdown */}
+            {selectedCity && (
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1">
+                  Location
+                </label>
+                <select
+                  value={selectedLocation}
+                  onChange={(e) => {
+                    setSelectedLocation(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-3 py-2 rounded-full border border-border bg-background text-foreground font-medium text-sm"
+                >
+                  <option value="">All Locations</option>
+                  {locations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Search Location */}
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                Search
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Area or PG name..."
+                  value={searchLocation}
+                  onChange={(e) => {
+                    setSearchLocation(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-9 rounded-full border-border text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Price Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                Price
+              </label>
+              <select
+                value={priceFilter}
+                onChange={(e) => {
+                  setPriceFilter(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 rounded-full border border-border bg-background text-foreground font-medium text-sm"
+              >
+                <option value="all">All Prices</option>
+                <option value="low">Under ₹5000</option>
+                <option value="mid">₹5000 - ₹7000</option>
+                <option value="high">Above ₹7000</option>
+              </select>
+            </div>
+
+            {/* Type Filter */}
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                Type
+              </label>
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-3 py-2 rounded-full border border-border bg-background text-foreground font-medium text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="boys">Boys</option>
+                <option value="girls">Girls</option>
+                <option value="co-ed">Co-ed</option>
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                className="w-full rounded-full text-sm h-9"
+                onClick={() => {
+                  setSelectedCity("");
+                  setSelectedLocation("");
+                  setSearchLocation("");
+                  setPriceFilter("all");
+                  setTypeFilter("all");
+                  setSortBy("newest");
+                  setCurrentPage(1);
+                }}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Near Colleges Section */}
+      {selectedCity && nearCollegeProperties.length > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200 py-6">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h3 className="font-display font-bold text-foreground">
+                    PGs Near Colleges & Universities
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {nearCollegeProperties.length} properties near educational institutions
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant={showNearColleges ? "default" : "outline"}
+                className="rounded-full text-sm"
+                onClick={() => setShowNearColleges(!showNearColleges)}
+              >
+                {showNearColleges ? "Hide" : "Show"} Near Colleges
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Near Colleges Properties */}
+      {showNearColleges && selectedCity && nearCollegeProperties.length > 0 && (
+        <div className="container mx-auto px-4 py-8">
+          <h2 className="font-display text-2xl font-bold text-foreground mb-6">
+            Student-Friendly PGs Near Top Colleges
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            {nearCollegeProperties.slice(0, 6).map((property) => (
+              <PropertyCard key={property.id || property._id} property={property} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Properties Section */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
-            <select
-              value={priceFilter}
-              onChange={(e) => {
-                setPriceFilter(e.target.value as any);
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">All Prices</option>
-              <option value="low">Below ₹5,000</option>
-              <option value="mid">₹5,000 - ₹10,000</option>
-              <option value="high">Above ₹10,000</option>
-            </select>
+            <h2 className="font-display text-2xl font-bold text-foreground mb-1">
+              Available Properties
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {filteredProperties.length} properties found
+              {selectedCity && ` in ${selectedCity}`}
+              {selectedLocation && ` • ${selectedLocation}`}
+            </p>
           </div>
 
-          {/* Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value as any);
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">All Types</option>
-              <option value="boys">Boys</option>
-              <option value="girls">Girls</option>
-              <option value="co-ed">Co-ed</option>
-            </select>
-          </div>
-
-          {/* Sort */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
             <select
               value={sortBy}
               onChange={(e) => {
                 setSortBy(e.target.value as SortOption);
                 setCurrentPage(1);
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="px-3 py-2 rounded-full border border-border bg-background text-foreground font-medium text-sm"
             >
               <option value="newest">Newest</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
               <option value="rating">Highest Rated</option>
-              <option value="distance">Nearest</option>
+              <option value="distance">Closest to Metro</option>
             </select>
           </div>
         </div>
 
-        {/* Near Colleges Toggle */}
-        <div className="flex items-center gap-2 mb-8">
-          <input
-            type="checkbox"
-            id="nearColleges"
-            checked={showNearColleges}
-            onChange={(e) => {
-              setShowNearColleges(e.target.checked);
-              setCurrentPage(1);
-            }}
-            className="w-4 h-4 text-orange-600 rounded focus:ring-2 focus:ring-orange-500"
-          />
-          <label htmlFor="nearColleges" className="text-sm font-medium text-gray-700">
-            Show only properties near colleges
-          </label>
-        </div>
-
-        {/* Results Count */}
-        <div className="mb-6 flex items-center justify-between">
-          <p className="text-gray-600">
-            Showing <span className="font-semibold">{currentProperties.length}</span> of{" "}
-            <span className="font-semibold">{filteredProperties.length}</span> properties
-          </p>
-          {filteredProperties.length > 0 && (
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="w-4 h-4 text-gray-500" />
-              <span className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
+        {paginatedProperties.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {paginatedProperties.map((property) => (
+                <PropertyCard key={property.id || property._id} property={property} />
+              ))}
             </div>
-          )}
-        </div>
 
-        {/* Properties Grid */}
-        {currentProperties.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {currentProperties.map((property) => (
-              <PropertyCard key={property.id} property={property} />
-            ))}
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className="rounded-full min-w-10"
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-12">
-            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-xl text-gray-600">No properties found matching your criteria</p>
-            <p className="text-gray-500 mt-2">Try adjusting your filters</p>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mb-8">
+            <p className="text-lg text-muted-foreground mb-4">
+              No properties found matching your criteria.
+            </p>
             <Button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              variant="outline"
-              className="rounded-full"
+              className="rounded-full bg-primary hover:bg-primary/90"
+              onClick={() => {
+                setSelectedCity("");
+                setSelectedLocation("");
+                setSearchLocation("");
+                setPriceFilter("all");
+                setTypeFilter("all");
+                setSortBy("newest");
+                setCurrentPage(1);
+              }}
             >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                variant={currentPage === page ? "default" : "outline"}
-                className={`rounded-full w-10 h-10 p-0 ${
-                  currentPage === page ? "bg-orange-600 hover:bg-orange-700" : ""
-                }`}
-              >
-                {page}
-              </Button>
-            ))}
-
-            <Button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-              variant="outline"
-              className="rounded-full"
-            >
-              <ChevronRight className="w-4 h-4" />
+              Reset All Filters
             </Button>
           </div>
         )}

@@ -31,6 +31,10 @@ interface PropertyCardProps {
 export default function PropertyCard({ property }: PropertyCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
 
+  // Handle both static landlord and API landlordId
+  const landlord = property.landlord || property.landlordId || { name: "Unknown", rating: 0, verified: false };
+  const propertyId = property.id || property._id;
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case "boys":
@@ -187,11 +191,11 @@ export default function PropertyCard({ property }: PropertyCardProps) {
           <p className="text-xs text-muted-foreground font-semibold mb-2">Landlord</p>
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="font-semibold text-sm text-foreground">{property.landlord.name}</p>
+                <p className="font-semibold text-sm text-foreground">{landlord.name}</p>
               <div className="flex items-center gap-1 mt-1">
                 <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs text-muted-foreground">{property.landlord.rating}</span>
-                {property.landlord.verified && (
+                <span className="text-xs text-muted-foreground">{landlord.rating || "New"}</span>
+                {(landlord.verified || property.verified) && (
                   <span className="ml-1 flex items-center gap-0.5 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
                     <Check className="w-3 h-3" />
                     Verified
@@ -204,7 +208,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
 
         {/* Action Buttons */}
         <div className="flex gap-2 mt-auto">
-          <Link href={`/property/${property.id}`} className="flex-1">
+          <Link href={`/property/${propertyId}`} className="flex-1">
             <a className="no-underline">
               <Button className="w-full rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                 View Details
@@ -216,7 +220,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
             className="flex-1 rounded-full border-primary/30 hover:bg-primary/10"
             onClick={(e) => {
               e.preventDefault();
-              alert(`Message sent to ${property.landlord.name}`);
+              alert(`Message sent to ${landlord.name}`);
             }}
           >
             <MessageSquare className="w-4 h-4" />
