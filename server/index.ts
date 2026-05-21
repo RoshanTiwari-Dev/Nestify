@@ -337,6 +337,23 @@ app.post("/api/properties", async (req: Request, res: Response) => {
   }
 });
 
+app.put("/api/properties/:id", async (req: Request, res: Response) => {
+  try {
+    const { name, location, city, price, type, ...rest } = req.body;
+    const property = await Property.findByIdAndUpdate(
+      req.params.id,
+      { name, location, city, price, type, ...rest },
+      { new: true }
+    );
+    if (!property) {
+      return res.status(404).json({ error: "Property not found" });
+    }
+    res.json(property);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to update property", details: error });
+  }
+});
+
 app.delete("/api/properties/:id", async (req: Request, res: Response) => {
   try {
     const property = await Property.findByIdAndDelete(req.params.id);

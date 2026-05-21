@@ -2,14 +2,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Edit2, Trash2, X, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Loader2, Image as ImageIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 /**
  * Property Management Page - For Landlords/Hosts
- * Features: List, add, edit, delete properties
+ * Features: List, add, edit, delete properties with multiple photos
  * Design: Warm Hospitality
  */
 
@@ -29,6 +29,7 @@ interface PropertyForm {
   laundry: boolean;
   studyRoom: boolean;
   commonArea: boolean;
+  images: string[];
 }
 
 export default function PropertyManagement() {
@@ -38,6 +39,7 @@ export default function PropertyManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
   
   const [formData, setFormData] = useState<PropertyForm>({
     name: "",
@@ -55,6 +57,7 @@ export default function PropertyManagement() {
     laundry: false,
     studyRoom: false,
     commonArea: false,
+    images: [],
   });
 
   useEffect(() => {
@@ -79,7 +82,26 @@ export default function PropertyManagement() {
     }
   };
 
-  const handleAddProperty = async () => {
+  const handleAddImage = () => {
+    if (!imageUrl) return;
+    if (formData.images.length >= 6) {
+      toast.error("Maximum 6 images allowed");
+      return;
+    }
+    setFormData({
+      ...formData,
+      images: [...formData.images, imageUrl]
+    });
+    setImageUrl("");
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...formData.images];
+    newImages.splice(index, 1);
+    setFormData({ ...formData, images: newImages });
+  };
+
+  const handleSaveProperty = async () => {
     if (!formData.name || !formData.location || !formData.price || !formData.city) {
       toast.error("Please fill in required fields");
       return;
@@ -88,15 +110,8 @@ export default function PropertyManagement() {
     try {
       setIsSubmitting(true);
       const url = editingId ? `/api/properties/${editingId}` : "/api/properties";
-      const method = editingId ? "PUT" : "POST"; // Note: Server might need PUT route, checking...
+      const method = editingId ? "PUT" : "POST";
       
-      // For now, only POST is implemented on server. Let's stick to adding.
-      if (editingId) {
-        toast.info("Edit functionality coming soon to API");
-        setIsSubmitting(false);
-        return;
-      }
-
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -141,9 +156,11 @@ export default function PropertyManagement() {
       laundry: false,
       studyRoom: false,
       commonArea: false,
+      images: [],
     });
     setEditingId(null);
     setShowAddForm(false);
+    setImageUrl("");
   };
 
   const handleEdit = (property: any) => {
@@ -163,9 +180,11 @@ export default function PropertyManagement() {
       laundry: property.laundry || false,
       studyRoom: property.studyRoom || false,
       commonArea: property.commonArea || false,
+      images: property.images || [],
     });
     setEditingId(property._id);
     setShowAddForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id: string) => {
@@ -332,6 +351,52 @@ export default function PropertyManagement() {
               />
             </div>
 
+            {/* Photos Section */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-foreground mb-3">
+                Property Photos (Add 4-5 photos)
+              </label>
+              <div className="flex gap-2 mb-4">
+                <Input
+                  placeholder="Paste image URL here..."
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className="rounded-full flex-1"
+                />
+                <Button 
+                  type="button" 
+                  onClick={handleAddImage}
+                  className="rounded-full"
+                  variant="secondary"
+                >
+                  Add URL
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                {formData.images.map((url, index) => (
+                  <div key={index} className="relative group aspect-square rounded-xl overflow-hidden border border-border">
+                    <img src={url} alt={`Property ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {formData.images.length < 6 && (
+                  <div className="aspect-square rounded-xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center text-muted-foreground">
+                    <ImageIcon className="w-6 h-6 mb-1 opacity-20" />
+                    <span className="text-[10px]">Photo {formData.images.length + 1}</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2 italic">
+                Tip: You can use public image URLs from Unsplash or other hosting services.
+              </p>
+            </div>
+
             <div className="mb-6">
               <label className="block text-sm font-semibold text-foreground mb-3">
                 Amenities
@@ -367,7 +432,7 @@ export default function PropertyManagement() {
             <div className="flex gap-3">
               <Button
                 className="flex-1 rounded-full bg-primary hover:bg-primary/90"
-                onClick={handleAddProperty}
+                onClick={handleSaveProperty}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
@@ -386,73 +451,87 @@ export default function PropertyManagement() {
 
         {/* Properties Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((property) => (
-            <Card key={property._id} className="p-6 rounded-2xl hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-display text-xl font-bold text-foreground">
-                  {property.name}
-                </h3>
-                <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded-full ${
-                  property.type === 'boys' ? 'bg-blue-100 text-blue-700' : 
-                  property.type === 'girls' ? 'bg-pink-100 text-pink-700' : 'bg-purple-100 text-purple-700'
-                }`}>
-                  {property.type}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-sm mb-4">{property.location}, {property.city}</p>
-              
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-muted/30 p-2 rounded-lg">
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Price</p>
-                  <p className="font-bold text-foreground">₹{property.price}</p>
+          {properties.length > 0 ? (
+            properties.map((property) => (
+              <Card key={property._id} className="p-0 rounded-2xl hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                <div className="aspect-video w-full bg-muted relative">
+                  {property.images && property.images.length > 0 ? (
+                    <img 
+                      src={property.images[0]} 
+                      alt={property.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <ImageIcon className="w-8 h-8 opacity-20" />
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3">
+                    <span className={`text-[10px] uppercase font-bold px-3 py-1 rounded-full shadow-sm ${
+                      property.type === 'boys' ? 'bg-blue-500 text-white' : 
+                      property.type === 'girls' ? 'bg-pink-500 text-white' : 'bg-purple-500 text-white'
+                    }`}>
+                      {property.type}
+                    </span>
+                  </div>
                 </div>
-                <div className="bg-muted/30 p-2 rounded-lg">
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Rating</p>
-                  <p className="font-bold text-foreground">{property.rating || "New"}</p>
+                
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-display text-xl font-bold text-foreground">
+                      {property.name}
+                    </h3>
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-4">{property.location}, {property.city}</p>
+                  
+                  <div className="grid grid-cols-2 gap-4 mb-6 mt-auto">
+                    <div className="bg-muted/30 p-2 rounded-lg">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Price</p>
+                      <p className="font-bold text-foreground">₹{property.price}</p>
+                    </div>
+                    <div className="bg-muted/30 p-2 rounded-lg">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">Photos</p>
+                      <p className="font-bold text-foreground">{property.images?.length || 0}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-full"
+                      onClick={() => handleEdit(property)}
+                    >
+                      <Edit2 className="w-3 h-3 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 rounded-full text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleDelete(property._id)}
+                    >
+                      <Trash2 className="w-3 h-3 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 rounded-full"
-                  onClick={() => handleEdit(property)}
-                >
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 rounded-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-100"
-                  onClick={() => handleDelete(property._id)}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {properties.length === 0 && !showAddForm && (
-          <div className="text-center py-20 bg-muted/20 rounded-3xl border-2 border-dashed border-muted">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-primary" />
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-20 bg-muted/20 rounded-3xl border-2 border-dashed border-muted-foreground/10">
+              <ImageIcon className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-foreground">No properties yet</h3>
+              <p className="text-muted-foreground mb-6">List your first property to start hosting</p>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="rounded-full"
+              >
+                Add Property
+              </Button>
             </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">No properties listed yet</h3>
-            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
-              Start earning by listing your PG or hostel on Nestify. It only takes a few minutes!
-            </p>
-            <Button
-              className="rounded-full bg-primary hover:bg-primary/90 px-8"
-              onClick={() => setShowAddForm(true)}
-            >
-              List Your First Property
-            </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
