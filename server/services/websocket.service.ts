@@ -1,5 +1,6 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { Server as HTTPServer } from "http";
+import mongoose from "mongoose";
 
 interface ActiveUser {
   userId: string;
@@ -54,7 +55,7 @@ class WebSocketService {
       // Send message
       socket.on(
         "message:send",
-        (data: {
+        async (data: {
           senderId: string;
           senderName: string;
           receiverId: string;
@@ -62,43 +63,57 @@ class WebSocketService {
           propertyId?: string;
         }) => {
           const { senderId, senderName, receiverId, content, propertyId } = data;
-          const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-          const message: ChatMessage = {
-            id: messageId,
-            senderId,
-            senderName,
-            receiverId,
-            content,
-            timestamp: new Date(),
-            read: false,
-          };
-
-          // Create room ID (sorted to ensure consistency)
-          const roomId = [senderId, receiverId].sort().join("_");
-
-          // Store message
-          if (!this.chatRooms.has(roomId)) {
-            this.chatRooms.set(roomId, []);
-          }
-          this.chatRooms.get(roomId)!.push(message);
-
-          // Send to receiver
-          const receiver = this.activeUsers.get(receiverId);
-          if (receiver) {
-            this.io.to(receiver.socketId).emit("message:receive", {
-              ...message,
-              propertyId,
+          
+          try {
+            // Save to Database
+            const MessageModel = mongoose.model("Message");
+            const dbMessage = new MessageModel({
+              senderId,
+              receiverId,
+              content,
+              read: false
             });
+            await dbMessage.save();
+
+            const message: ChatMessage = {
+              id: dbMessage._id.toString(),
+              senderId,
+              senderName,
+              receiverId,
+              content,
+              timestamp: dbMessage.createdAt || new Date(),
+              read: false,
+            };
+
+            // Create room ID (sorted to ensure consistency)
+            const roomId = [senderId, receiverId].sort().join("_");
+
+            // Store message in-memory for quick access
+            if (!this.chatRooms.has(roomId)) {
+              this.chatRooms.set(roomId, []);
+            }
+            this.chatRooms.get(roomId)!.push(message);
+
+            // Send to receiver
+            const receiver = this.activeUsers.get(receiverId);
+            if (receiver) {
+              this.io.to(receiver.socketId).emit("message:receive", {
+                ...message,
+                propertyId,
+              });
+            }
+
+            // Send confirmation to sender
+            socket.emit("message:sent", {
+              messageId: message.id,
+              status: "delivered",
+            });
+
+            console.log(`💬 Message from ${senderName} to ${receiverId} saved to DB`);
+          } catch (error) {
+            console.error("❌ Error saving message to DB:", error);
+            socket.emit("error", { message: "Failed to save message" });
           }
-
-          // Send confirmation to sender
-          socket.emit("message:sent", {
-            messageId,
-            status: "delivered",
-          });
-
-          console.log(`💬 Message from ${senderName} to ${receiverId}`);
         }
       );
 

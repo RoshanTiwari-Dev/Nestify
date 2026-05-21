@@ -215,16 +215,19 @@ export default function PropertyCard({ property }: PropertyCardProps) {
               </Button>
             </a>
           </Link>
-          <Button
-            variant="outline"
-            className="flex-1 rounded-full border-primary/30 hover:bg-primary/10"
-            onClick={(e) => {
-              e.preventDefault();
-              alert(`Message sent to ${landlord.name}`);
-            }}
-          >
-            <MessageSquare className="w-4 h-4" />
-          </Button>
+          <Link href={`/property/${propertyId}`} className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full rounded-full border-primary/30 hover:bg-primary/10"
+              onClick={(e) => {
+                // Let the Link handle navigation, but we could pass a state to open chat
+                // For now, navigating to detail page is better than a broken alert
+              }}
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Message
+            </Button>
+          </Link>
         </div>
       </div>
     </Card>
