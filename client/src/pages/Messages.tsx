@@ -34,31 +34,43 @@ export default function Messages() {
         // Group messages by conversation partner
         const conversationMap = new Map();
         
-        messages.forEach((msg: any) => {
+        // Sort messages by creation time (newest last for processing)
+        const sortedMessages = [...messages].sort((a, b) => 
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
+        sortedMessages.forEach((msg: any) => {
+          if (!msg.senderId || !msg.receiverId) return;
+          
           const partner = msg.senderId._id === user?.id ? msg.receiverId : msg.senderId;
           const partnerId = partner._id;
           
           if (!conversationMap.has(partnerId)) {
             conversationMap.set(partnerId, {
               id: partnerId,
-              name: partner.name,
-              avatar: partner.name.charAt(0),
+              name: partner.name || "Unknown User",
+              avatar: (partner.name || "U").charAt(0),
               lastMessage: msg.content,
+              lastMessageTime: new Date(msg.createdAt).getTime(),
               unread: msg.read ? 0 : (msg.receiverId._id === user?.id ? 1 : 0),
               partner: partner
             });
           } else {
             const existing = conversationMap.get(partnerId);
-            // If this message is newer, update last message
-            // (assuming messages are sorted or we'd need to check timestamps)
             existing.lastMessage = msg.content;
+            existing.lastMessageTime = new Date(msg.createdAt).getTime();
             if (!msg.read && msg.receiverId._id === user?.id) {
               existing.unread += 1;
             }
           }
         });
         
-        setChats(Array.from(conversationMap.values()));
+        // Sort conversations by the latest message time (newest first)
+        const sortedChats = Array.from(conversationMap.values()).sort(
+          (a, b) => b.lastMessageTime - a.lastMessageTime
+        );
+        
+        setChats(sortedChats);
       }
     } catch (error) {
       console.error("Failed to fetch messages:", error);

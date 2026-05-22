@@ -42,7 +42,12 @@ export default function RealtimeChat({
 
   // Initialize Socket.io connection
   useEffect(() => {
-    const socket = io(process.env.REACT_APP_API_URL || "http://localhost:3000", {
+    // Determine the socket URL: use the current window origin if in production
+    const socketUrl = window.location.hostname === 'localhost' 
+      ? "http://localhost:3000" 
+      : window.location.origin;
+
+    const socket = io(socketUrl, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
@@ -200,7 +205,7 @@ export default function RealtimeChat({
       <div className="p-4 border-b border-border bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-foreground">{otherUserName}</h3>
+            <h3 className="font-semibold text-foreground">{otherUserName || "User"}</h3>
             <p className="text-xs text-muted-foreground">
               {isConnected ? "🟢 Online" : "🔴 Offline"}
             </p>
