@@ -53,7 +53,7 @@ export default function PropertyCard({ property }: PropertyCardProps) {
       {/* Image Container */}
       <div className="relative h-48 overflow-hidden bg-muted">
         <img
-          src={property.image}
+          src={property.image || (property.images && property.images.length > 0 ? property.images[0] : "https://via.placeholder.com/400x300?text=No+Image+Available")}
           alt={property.name}
           className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
         />

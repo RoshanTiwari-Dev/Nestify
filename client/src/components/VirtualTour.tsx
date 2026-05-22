@@ -16,14 +16,16 @@ export default function VirtualTour({ property }: VirtualTourProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // Generate multiple images for the property
-  const tourImages = [
-    property.image,
-    "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-green-valley-1-7fFHisRX8apqHrUeJjEWQf.webp",
-    "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-cozy-corner-1-B4ojrtmXP7hE9sb9DRVPhK.webp",
-    "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-modern-living-1-9AQQVbPPb2dJ9Q96wtZ2oz.webp",
-    "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-student-haven-1-Mx6uVNrna9HXZzEJ5RViiK.webp",
-  ];
+  // Use uploaded images if available, otherwise fallback to static image + stock photos
+  const tourImages = property.images && property.images.length > 0 
+    ? property.images 
+    : [
+        property.image,
+        "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-green-valley-1-7fFHisRX8apqHrUeJjEWQf.webp",
+        "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-cozy-corner-1-B4ojrtmXP7hE9sb9DRVPhK.webp",
+        "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-modern-living-1-9AQQVbPPb2dJ9Q96wtZ2oz.webp",
+        "https://d2xsxph8kpxj0f.cloudfront.net/310519663490327936/TzN54ThndsQfyZ4yvrXWYy/pg-student-haven-1-Mx6uVNrna9HXZzEJ5RViiK.webp",
+      ].filter(Boolean);
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % tourImages.length);
@@ -96,10 +98,14 @@ export default function VirtualTour({ property }: VirtualTourProps) {
         {/* Image Info */}
         <div className="p-4 bg-gradient-to-r from-primary/5 to-secondary/5 border-t border-border">
           <p className="text-sm font-semibold text-foreground mb-2">
-            {["Bedroom", "Common Area", "Kitchen", "Bathroom", "Balcony"][currentImageIndex]}
+            {property.images && property.images.length > 0 
+              ? `Photo ${currentImageIndex + 1}` 
+              : ["Bedroom", "Common Area", "Kitchen", "Bathroom", "Balcony"][currentImageIndex]}
           </p>
           <p className="text-xs text-muted-foreground">
-            {["Spacious bedroom with natural light", "Comfortable common area for residents", "Well-equipped kitchen", "Modern bathroom facilities", "Scenic balcony view"][currentImageIndex]}
+            {property.images && property.images.length > 0 
+              ? `View of ${property.name}` 
+              : ["Spacious bedroom with natural light", "Comfortable common area for residents", "Well-equipped kitchen", "Modern bathroom facilities", "Scenic balcony view"][currentImageIndex]}
           </p>
         </div>
       </div>
