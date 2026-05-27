@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ interface LoginProps {
 }
 
 export default function Login({ onLoginSuccess }: LoginProps) {
-  const { login } = useAuth();
+  const { login, signup, continueAsGuest } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,38 +60,8 @@ export default function Login({ onLoginSuccess }: LoginProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/users/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: registerName,
-          email: registerEmail,
-          password: registerPassword,
-          role: selectedRole,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || errorData.error || "Registration failed");
-      }
-
-      const data = await response.json();
-      const { token, message } = data;
-      
-      if (token) {
-        localStorage.setItem("authToken", token);
-        // Registration successful, show success message
-        setError(null);
-        // Auto-login after registration
-        setTimeout(() => {
-          handleLogin(new Event("submit") as any);
-        }, 500);
-      } else {
-        throw new Error(message || "Registration successful but no token received");
-      }
+      await signup(registerName, registerEmail, registerPassword, selectedRole);
+      onLoginSuccess?.();
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
@@ -221,6 +191,24 @@ export default function Login({ onLoginSuccess }: LoginProps) {
                   Register
                 </button>
               </p>
+
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border"></span>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full rounded-lg"
+                onClick={continueAsGuest}
+              >
+                Continue as Guest
+              </Button>
             </form>
           ) : (
             /* Register Form */

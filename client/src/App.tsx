@@ -48,9 +48,9 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 }
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
 
-  // Show login page while loading or if not authenticated
+  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -62,7 +62,8 @@ function Router() {
     );
   }
 
-  if (!isAuthenticated) {
+  // If not authenticated and not in guest mode, show login
+  if (!isAuthenticated && !isGuest) {
     return <Login />;
   }
 
@@ -75,11 +76,24 @@ function Router() {
           <Route path={"/"} component={Home} />
           <Route path={"/property/:id"} component={PropertyDetail} />
           <Route path={"/dashboard"} component={Dashboard} />
-          <Route path={"/my-properties"} component={PropertyManagement} />
-          <Route path={"/bookings"} component={Bookings} />
-          <Route path={"/messages"} component={Messages} />
-          <Route path={"/reviews"} component={Reviews} />
-          <Route path={"/wishlist"} component={Wishlist} />
+          
+          {/* Protected Routes - only for authenticated users */}
+          <Route path="/my-properties">
+            <ProtectedRoute component={PropertyManagement} />
+          </Route>
+          <Route path="/bookings">
+            <ProtectedRoute component={Bookings} />
+          </Route>
+          <Route path="/messages">
+            <ProtectedRoute component={Messages} />
+          </Route>
+          <Route path="/wishlist">
+            <ProtectedRoute component={Wishlist} />
+          </Route>
+          <Route path="/reviews">
+            <ProtectedRoute component={Reviews} />
+          </Route>
+          
           <Route path={"/404"} component={NotFound} />
           {/* Final fallback route */}
           <Route component={NotFound} />

@@ -18,10 +18,12 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isGuest: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (name: string, email: string, password: string, role: "tenant" | "landlord") => Promise<void>;
+  continueAsGuest: () => void;
   updateUser: (user: User) => void;
 }
 
@@ -29,12 +31,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if user is already logged in on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        const guestMode = localStorage.getItem("guestMode") === "true";
+        if (guestMode) {
+          setIsGuest(true);
+        }
+
         const token = localStorage.getItem("authToken");
         if (token) {
           // Verify token with backend
@@ -78,7 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const { user: userData, token } = await response.json();
       localStorage.setItem("authToken", token);
+      localStorage.removeItem("guestMode");
       setUser(userData);
+      setIsGuest(false);
     } catch (error) {
       throw error;
     }
@@ -114,7 +124,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("guestMode");
     setUser(null);
+    setIsGuest(false);
+  };
+
+  const continueAsGuest = () => {
+    localStorage.setItem("guestMode", "true");
+    setIsGuest(true);
   };
 
   const updateUser = (updatedUser: User) => {
@@ -126,10 +143,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated: !!user,
+        isGuest,
         isLoading,
         login,
         logout,
         signup,
+        continueAsGuest,
         updateUser,
       }}
     >

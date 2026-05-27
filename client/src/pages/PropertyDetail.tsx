@@ -219,7 +219,13 @@ export default function PropertyDetail() {
               <p className="text-muted-foreground mb-4 font-medium">per month</p>
               <Button
                 className="w-full rounded-full bg-primary hover:bg-primary/90 mb-3 font-bold h-12 shadow-sm"
-                onClick={() => setShowBooking(true)}
+                onClick={() => {
+                  if (!user) {
+                    toast.error("Please login to book this property");
+                    return;
+                  }
+                  setShowBooking(true);
+                }}
               >
                 <BookOpen className="w-4 h-4 mr-2" />
                 Book Now
