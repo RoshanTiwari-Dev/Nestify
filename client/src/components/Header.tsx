@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, LogOut } from "lucide-react";
+import { Menu, X, Heart, LogOut, LogIn } from "lucide-react";
 import { useState } from "react";
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "./ThemeToggle";
@@ -16,7 +16,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
+  const handleAuthAction = () => {
     logout();
     setMobileMenuOpen(false);
   };
@@ -50,11 +50,13 @@ export default function Header() {
               Dashboard
             </a>
           </Link>
-          <Link href="/my-properties">
-            <a className="text-foreground hover:text-primary transition-colors font-body">
-              My Properties
-            </a>
-          </Link>
+          {user?.role === "landlord" && (
+            <Link href="/my-properties">
+              <a className="text-foreground hover:text-primary transition-colors font-body">
+                My Properties
+              </a>
+            </Link>
+          )}
           <Link href="/messages">
             <a className="text-foreground hover:text-primary transition-colors font-body">
               Messages
@@ -83,7 +85,7 @@ export default function Header() {
               </div>
               <Button
                 variant="outline"
-                onClick={handleLogout}
+                onClick={handleAuthAction}
                 className="rounded-full"
                 size="sm"
               >
@@ -91,7 +93,16 @@ export default function Header() {
                 Logout
               </Button>
             </>
-          ) : null}
+          ) : (
+            <Button
+              onClick={handleAuthAction}
+              className="rounded-full bg-primary hover:bg-primary/90 shadow-sm"
+              size="sm"
+            >
+              <LogIn className="w-4 h-4 mr-1" />
+              Sign In
+            </Button>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -124,11 +135,13 @@ export default function Header() {
                 Dashboard
               </a>
             </Link>
-            <Link href="/my-properties">
-              <a className="text-foreground hover:text-primary transition-colors font-body">
-                My Properties
-              </a>
-            </Link>
+            {user?.role === "landlord" && (
+              <Link href="/my-properties">
+                <a className="text-foreground hover:text-primary transition-colors font-body">
+                  My Properties
+                </a>
+              </Link>
+            )}
             <Link href="/messages">
               <a className="text-foreground hover:text-primary transition-colors font-body">
                 Messages
@@ -149,7 +162,7 @@ export default function Header() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={handleLogout}
+                    onClick={handleAuthAction}
                     className="w-full rounded-full"
                     size="sm"
                   >
@@ -157,7 +170,16 @@ export default function Header() {
                     Logout
                   </Button>
                 </>
-              ) : null}
+              ) : (
+                <Button
+                  onClick={handleAuthAction}
+                  className="w-full rounded-full bg-primary hover:bg-primary/90"
+                  size="sm"
+                >
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Sign In
+                </Button>
+              )}
             </div>
           </nav>
         </div>
