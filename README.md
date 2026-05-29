@@ -6,6 +6,8 @@ A modern, responsive web application built with React, TypeScript, and TailwindC
 
 Nestify is a comprehensive platform designed to centralize scattered PG information into one clean, interactive interface. It addresses the common challenges students and working professionals face when searching for accommodation.
 
+APP Link - https://nestify-9zty.vercel.app
+
 ### Key Features
 
 - **Property Listings**: Browse and search through hundreds of PG and hostel properties
