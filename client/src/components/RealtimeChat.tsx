@@ -42,10 +42,11 @@ export default function RealtimeChat({
 
   // Initialize Socket.io connection
   useEffect(() => {
-    // Determine the socket URL: use the current window origin if in production
-    const socketUrl = window.location.hostname === 'localhost' 
-      ? "http://localhost:3000" 
-      : window.location.origin;
+    const socketUrl =
+      import.meta.env.VITE_WS_URL ||
+      (window.location.hostname === "localhost"
+        ? "http://localhost:3000"
+        : "https://nestify-1-37nq.onrender.com");
 
     const socket = io(socketUrl, {
       reconnection: true,

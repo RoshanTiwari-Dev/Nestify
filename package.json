@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite --host",
     "dev:server": "tsx watch server/index.ts",
+    "build:client": "vite build",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=cjs --outdir=dist --out-extension:.js=.cjs",
     "start": "NODE_ENV=production node dist/index.cjs",
